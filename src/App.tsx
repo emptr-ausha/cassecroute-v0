@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { recipes } from './data/recipes'
+import { useEffect, useState } from 'react'
+import { recipes as localRecipes, type Recipe } from './data/recipes'
 import {
   generateMenu,
   replaceMeal,
   type GeneratedMenu,
   type MenuRequest,
 } from './lib/generateMenu'
+import { loadRecipes } from './lib/recipeRepository'
 import './App.css'
 
 type Screen = 'home' | 'people' | 'meals' | 'menu' | 'confirmed'
@@ -33,9 +34,22 @@ function App() {
   const [defaultPeople, setDefaultPeople] = useState(2)
   const [selectedMeals, setSelectedMeals] = useState<SelectedMeals>({})
   const [generatedMenu, setGeneratedMenu] = useState<GeneratedMenu>({})
+  const [availableRecipes, setAvailableRecipes] = useState<Recipe[]>(localRecipes)
   const [leftovers, setLeftovers] = useState<Leftovers>({})
   const [pickerKey, setPickerKey] = useState<string | null>(null)
   const [recipeSearch, setRecipeSearch] = useState('')
+
+  useEffect(() => {
+    let isCurrent = true
+
+    loadRecipes().then((loadedRecipes) => {
+      if (isCurrent) setAvailableRecipes(loadedRecipes)
+    })
+
+    return () => {
+      isCurrent = false
+    }
+  }, [])
 
   const getRequests = (): MenuRequest[] =>
     Object.entries(selectedMeals).map(([key, people]) => {
@@ -50,13 +64,13 @@ function App() {
     })
 
   const handleGenerate = () => {
-    setGeneratedMenu(generateMenu(getRequests(), recipes))
+    setGeneratedMenu(generateMenu(getRequests(), availableRecipes))
     setLeftovers({})
     setScreen('menu')
   }
 
   const handleChange = (meal: MenuRequest) => {
-    setGeneratedMenu((current) => replaceMeal(meal, current, recipes))
+    setGeneratedMenu((current) => replaceMeal(meal, current, availableRecipes))
     setLeftovers((current) => {
       const next = { ...current }
       delete next[meal.key]
@@ -65,7 +79,7 @@ function App() {
   }
 
   const handleChooseRecipe = (meal: MenuRequest, recipeId: string) => {
-    const recipe = recipes.find((item) => item.id === recipeId)
+    const recipe = availableRecipes.find((item) => item.id === recipeId)
     if (!recipe) return
 
     setGeneratedMenu((current) => ({ ...current, [meal.key]: { ...meal, recipe } }))
@@ -237,6 +251,7 @@ function App() {
           {pickerKey && (
             <RecipePicker
               meal={getRequests().find((request) => request.key === pickerKey)}
+              availableRecipes={availableRecipes}
               search={recipeSearch}
               onSearch={setRecipeSearch}
               onChoose={handleChooseRecipe}
@@ -544,16 +559,17 @@ function ConfirmationMeal({ meal }: ConfirmationMealProps) {
 
 type RecipePickerProps = {
   meal: MenuRequest | undefined
+  availableRecipes: Recipe[]
   search: string
   onSearch: (value: string) => void
   onChoose: (meal: MenuRequest, recipeId: string) => void
   onClose: () => void
 }
 
-function RecipePicker({ meal, search, onSearch, onChoose, onClose }: RecipePickerProps) {
+function RecipePicker({ meal, availableRecipes, search, onSearch, onChoose, onClose }: RecipePickerProps) {
   if (!meal) return null
 
-  const compatibleRecipes = recipes
+  const compatibleRecipes = availableRecipes
     .filter((recipe) => recipe.moments.includes(meal.moment))
     .filter((recipe) => recipe.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
 
