@@ -52,7 +52,7 @@ function App() {
   const [pickerKey, setPickerKey] = useState<string | null>(null)
   const [recipeSearch, setRecipeSearch] = useState('')
   const [recipeForm, setRecipeForm] = useState<RecipeFormValues>(emptyRecipeForm)
-  const [formErrors, setFormErrors] = useState<string[]>([])
+  const [hasSubmittedForm, setHasSubmittedForm] = useState(false)
   const [formValidated, setFormValidated] = useState(false)
   const [passwordPrompt, setPasswordPrompt] = useState(false)
   const [adminPassword, setAdminPassword] = useState('')
@@ -135,6 +135,7 @@ function App() {
     setRecipeForm((current) => ({ ...current, [key]: value }))
     setFormValidated(false)
     setFormMessage('')
+    setFormMessage('')
   }
 
   const toggleFormChoice = (key: 'seasons', value: string) => {
@@ -145,28 +146,31 @@ function App() {
         : [...current.seasons, value],
     }))
     setFormValidated(false)
+    setFormMessage('')
   }
 
-  const getRecipeFormErrors = () => {
+  const getRecipeFormErrors = (form: RecipeFormValues = recipeForm) => {
     const errors: string[] = []
-    if (!recipeForm.name.trim()) errors.push('Ajoute le nom du plat.')
-    if (!recipeForm.moments) errors.push('Choisis au moins un moment.')
-    if (!recipeForm.weekType) errors.push('Choisis quand le plat peut être cuisiné.')
-    if (recipeForm.seasons.length === 0) errors.push('Choisis au moins une saison.')
-    if (!recipeForm.time) errors.push('Choisis un temps de préparation.')
-    if (!recipeForm.type) errors.push('Choisis un type de plat.')
-    if (!recipeForm.starch) errors.push('Choisis un féculent principal.')
-    if (!recipeForm.style) errors.push('Choisis un style.')
-    if (!recipeForm.classic) errors.push('Indique si le plat est un classique.')
+    if (!form.name.trim()) errors.push('Ajoute le nom du plat.')
+    if (!form.moments) errors.push('Choisis au moins un moment.')
+    if (!form.weekType) errors.push('Choisis quand le plat peut être cuisiné.')
+    if (form.seasons.length === 0) errors.push('Choisis au moins une saison.')
+    if (!form.time) errors.push('Choisis un temps de préparation.')
+    if (!form.type) errors.push('Choisis un type de plat.')
+    if (!form.starch) errors.push('Choisis un féculent principal.')
+    if (!form.style) errors.push('Choisis un style.')
+    if (!form.classic) errors.push('Indique si le plat est un classique.')
     return errors
   }
 
   const validateRecipeForm = () => {
     const errors = getRecipeFormErrors()
-    setFormErrors(errors)
+    setHasSubmittedForm(true)
     setFormValidated(errors.length === 0)
     return errors.length === 0 ? toRecipeInsertPayload(recipeForm) : null
   }
+
+  const visibleFormErrors = hasSubmittedForm ? getRecipeFormErrors() : []
 
   const postRecipe = async (payload: RecipeInsertPayload) => {
     const response = await fetch('/api/recipes', {
@@ -319,46 +323,46 @@ function App() {
           </div>
 
           <form className="recipe-form" onSubmit={handleAddRecipe} noValidate>
-            <FormField label="Nom du plat" required error={formErrors.includes('Ajoute le nom du plat.')}>
+            <FormField label="Nom du plat" required error={visibleFormErrors.includes('Ajoute le nom du plat.')}>
               <input
                 className="form-input"
                 type="text"
                 placeholder="Ex. Lasagnes de mamie"
                 value={recipeForm.name}
                 onChange={(event) => updateRecipeForm('name', event.target.value)}
-                aria-invalid={formErrors.includes('Ajoute le nom du plat.')}
+                aria-invalid={visibleFormErrors.includes('Ajoute le nom du plat.')}
               />
             </FormField>
 
-            <FormChoiceGroup label="Quand peut-on le manger ?" required error={formErrors.includes('Choisis au moins un moment.')}>
+            <FormChoiceGroup label="Quand peut-on le manger ?" required error={visibleFormErrors.includes('Choisis au moins un moment.')}>
               <ChoiceButtons values={['Midi', 'Soir', 'Les deux']} selected={recipeForm.moments ? [recipeForm.moments] : []} onToggle={(value) => updateRecipeForm('moments', value as RecipeFormValues['moments'])} single />
             </FormChoiceGroup>
 
-            <FormChoiceGroup label="Quand peut-on le cuisiner ?" required error={formErrors.includes('Choisis quand le plat peut être cuisiné.')}>
+            <FormChoiceGroup label="Quand peut-on le cuisiner ?" required error={visibleFormErrors.includes('Choisis quand le plat peut être cuisiné.')}>
               <ChoiceButtons values={['Semaine', 'Week-end', 'Tous les jours']} selected={recipeForm.weekType ? [recipeForm.weekType] : []} onToggle={(value) => updateRecipeForm('weekType', value as RecipeFormValues['weekType'])} single />
             </FormChoiceGroup>
 
-            <FormChoiceGroup label="Saison" required error={formErrors.includes('Choisis au moins une saison.')}>
+            <FormChoiceGroup label="Saison" required error={visibleFormErrors.includes('Choisis au moins une saison.')}>
               <ChoiceButtons values={['Printemps', 'Été', 'Automne', 'Hiver', "Toute l'année"]} selected={recipeForm.seasons} onToggle={(value) => toggleFormChoice('seasons', value)} />
             </FormChoiceGroup>
 
-            <FormChoiceGroup label="Temps" required error={formErrors.includes('Choisis un temps de préparation.')}>
+            <FormChoiceGroup label="Temps" required error={visibleFormErrors.includes('Choisis un temps de préparation.')}>
               <ChoiceButtons values={['Express · 15 min max', 'Rapide · 16 à 30 min', 'Normal · plus de 30 min']} selected={recipeForm.time ? [recipeForm.time === 'Express' ? 'Express · 15 min max' : recipeForm.time === 'Normal' ? 'Normal · plus de 30 min' : 'Rapide · 16 à 30 min'] : []} onToggle={(value) => updateRecipeForm('time', value.split(' · ')[0] as RecipeFormValues['time'])} single />
             </FormChoiceGroup>
 
-            <FormChoiceGroup label="Type" required error={formErrors.includes('Choisis un type de plat.')}>
+            <FormChoiceGroup label="Type" required error={visibleFormErrors.includes('Choisis un type de plat.')}>
               <ChoiceButtons values={['Végétarien', 'Viande', 'Poisson']} selected={recipeForm.type ? [recipeForm.type] : []} onToggle={(value) => updateRecipeForm('type', value as RecipeFormValues['type'])} single />
             </FormChoiceGroup>
 
-            <FormChoiceGroup label="Féculent principal" required error={formErrors.includes('Choisis un féculent principal.')}>
+            <FormChoiceGroup label="Féculent principal" required error={visibleFormErrors.includes('Choisis un féculent principal.')}>
               <ChoiceButtons values={['Aucun', 'Pâtes', 'Riz', 'Pommes de terre', 'Semoule', 'Pain', 'Gnocchis', 'Légumineuses', 'Autre']} selected={recipeForm.starch ? [recipeForm.starch] : []} onToggle={(value) => updateRecipeForm('starch', value)} single />
             </FormChoiceGroup>
 
-            <FormChoiceGroup label="Style" required error={formErrors.includes('Choisis un style.')}>
+            <FormChoiceGroup label="Style" required error={visibleFormErrors.includes('Choisis un style.')}>
               <ChoiceButtons values={['Healthy', 'Gourmand']} selected={recipeForm.style ? [recipeForm.style] : []} onToggle={(value) => updateRecipeForm('style', value as RecipeFormValues['style'])} single />
             </FormChoiceGroup>
 
-            <FormChoiceGroup label="Est-ce un classique ?" required error={formErrors.includes('Indique si le plat est un classique.')}>
+            <FormChoiceGroup label="Est-ce un classique ?" required error={visibleFormErrors.includes('Indique si le plat est un classique.')}>
               <ChoiceButtons values={['Oui', 'Non']} selected={recipeForm.classic ? [recipeForm.classic] : []} onToggle={(value) => updateRecipeForm('classic', value as RecipeFormValues['classic'])} single />
             </FormChoiceGroup>
 
@@ -379,9 +383,6 @@ function App() {
               </FormField>
             )}
 
-            {formErrors.length > 0 && (
-              <p className="form-feedback form-error" role="alert">Il manque encore : {formErrors.join(' ')}</p>
-            )}
             {formValidated && !formMessage && (
               <p className="form-feedback form-success" role="status">Le formulaire est valide. L'enregistrement sera disponible bientôt.</p>
             )}
@@ -641,7 +642,7 @@ function App() {
         </div>
 
         <div className="choice-grid">
-          <button className="choice-card choice-card-add" type="button" onClick={() => { setScreen('add'); setFormErrors([]); setFormValidated(false) }}>
+          <button className="choice-card choice-card-add" type="button" onClick={() => { setScreen('add'); setHasSubmittedForm(false); setFormValidated(false) }}>
             <span className="card-icon" aria-hidden="true">＋</span>
             <span className="choice-content">
               <strong>Ajouter un plat</strong>
