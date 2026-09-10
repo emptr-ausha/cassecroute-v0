@@ -54,8 +54,6 @@ function App() {
   const [recipeForm, setRecipeForm] = useState<RecipeFormValues>(emptyRecipeForm)
   const [hasSubmittedForm, setHasSubmittedForm] = useState(false)
   const [formValidated, setFormValidated] = useState(false)
-  const [passwordPrompt, setPasswordPrompt] = useState(false)
-  const [adminPassword, setAdminPassword] = useState('')
   const [formMessage, setFormMessage] = useState('')
   const [isSubmittingRecipe, setIsSubmittingRecipe] = useState(false)
 
@@ -180,12 +178,6 @@ function App() {
       body: JSON.stringify(payload),
     })
 
-    if (response.status === 401) {
-      setPasswordPrompt(true)
-      setFormValidated(false)
-      return false
-    }
-
     if (!response.ok) throw new Error('La recette n’a pas pu être enregistrée.')
     return true
   }
@@ -199,25 +191,6 @@ function App() {
     setFormMessage('')
 
     try {
-      if (passwordPrompt) {
-        if (!adminPassword) {
-          setFormMessage('Saisis le mot de passe partagé pour continuer.')
-          return
-        }
-
-        const loginResponse = await fetch('/api/auth/login', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password: adminPassword }),
-        })
-
-        if (!loginResponse.ok) {
-          setFormMessage('Mot de passe incorrect.')
-          return
-        }
-      }
-
       const saved = await postRecipe(payload)
       if (!saved) return
 
@@ -225,8 +198,6 @@ function App() {
       setAvailableRecipes(refreshedRecipes)
       setFormValidated(true)
       setFormMessage('Plat ajouté. Il est maintenant disponible dans votre bibliothèque.')
-      setPasswordPrompt(false)
-      setAdminPassword('')
       setRecipeForm(emptyRecipeForm)
     } catch (error) {
       setFormMessage(error instanceof Error ? error.message : 'Une erreur est survenue.')
@@ -369,19 +340,6 @@ function App() {
             <FormField label="Lien vers la recette">
               <input className="form-input" type="url" placeholder="https://... (facultatif)" value={recipeForm.link} onChange={(event) => updateRecipeForm('link', event.target.value)} />
             </FormField>
-
-            {passwordPrompt && (
-              <FormField label="Mot de passe partagé" required>
-                <input
-                  className="form-input"
-                  type="password"
-                  placeholder="Mot de passe"
-                  value={adminPassword}
-                  onChange={(event) => { setAdminPassword(event.target.value); setFormMessage('') }}
-                  autoComplete="current-password"
-                />
-              </FormField>
-            )}
 
             {formValidated && !formMessage && (
               <p className="form-feedback form-success" role="status">Le formulaire est valide. L'enregistrement sera disponible bientôt.</p>

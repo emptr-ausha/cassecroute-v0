@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { hasValidSession, jsonMethodNotAllowed } from './_auth'
 
 type VercelRequest = IncomingMessage & { body?: unknown }
 type VercelResponse = ServerResponse & {
@@ -27,6 +26,11 @@ const allowedTimes = new Set(['Express', 'Rapide', 'Normal'])
 const allowedTypes = new Set(['Végétarien', 'Viande', 'Poisson'])
 const allowedStyles = new Set(['Healthy', 'Gourmand'])
 
+const methodNotAllowed = (res: VercelResponse) => {
+  res.setHeader('Allow', 'POST')
+  return res.status(405).json({ error: 'Method not allowed' })
+}
+
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0
 
@@ -49,8 +53,7 @@ const validatePayload = (body: unknown): RecipePayload | null => {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return jsonMethodNotAllowed(res, ['POST'])
-  if (!hasValidSession(req)) return res.status(401).json({ error: 'Authentication required' })
+  if (req.method !== 'POST') return methodNotAllowed(res)
 
   const payload = validatePayload(req.body)
   if (!payload) return res.status(400).json({ error: 'Données de recette invalides' })
