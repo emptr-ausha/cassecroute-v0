@@ -7,13 +7,26 @@ import {
   type MenuRequest,
 } from './lib/generateMenu'
 import { loadRecipes } from './lib/recipeRepository'
+import { type RecipeFormValues, type RecipeInsertPayload, toRecipeInsertPayload } from './lib/recipePayload'
 import './App.css'
 
-type Screen = 'home' | 'people' | 'meals' | 'menu' | 'confirmed'
+type Screen = 'home' | 'add' | 'people' | 'meals' | 'menu' | 'confirmed'
 type MealSlot = 'Midi' | 'Soir'
 type SelectedMeals = Record<string, number>
 type Leftovers = Record<string, boolean>
 type DisplayMeal = (GeneratedMenu[string] | MenuRequest) & { isLeftovers?: boolean }
+const emptyRecipeForm: RecipeFormValues = {
+  name: '',
+  moments: '',
+  weekType: 'Tous les jours',
+  seasons: ["Toute l'année"],
+  time: 'Rapide',
+  type: 'Végétarien',
+  starch: 'Aucun',
+  style: 'Healthy',
+  classic: 'Non',
+  link: '',
+}
 
 const days = [
   'Lundi',
@@ -38,6 +51,13 @@ function App() {
   const [leftovers, setLeftovers] = useState<Leftovers>({})
   const [pickerKey, setPickerKey] = useState<string | null>(null)
   const [recipeSearch, setRecipeSearch] = useState('')
+  const [recipeForm, setRecipeForm] = useState<RecipeFormValues>(emptyRecipeForm)
+  const [formErrors, setFormErrors] = useState<string[]>([])
+  const [formValidated, setFormValidated] = useState(false)
+  const [passwordPrompt, setPasswordPrompt] = useState(false)
+  const [adminPassword, setAdminPassword] = useState('')
+  const [formMessage, setFormMessage] = useState('')
+  const [isSubmittingRecipe, setIsSubmittingRecipe] = useState(false)
 
   useEffect(() => {
     let isCurrent = true
@@ -111,6 +131,100 @@ function App() {
     setRecipeSearch('')
   }
 
+  const updateRecipeForm = <Key extends keyof RecipeFormValues>(key: Key, value: RecipeFormValues[Key]) => {
+    setRecipeForm((current) => ({ ...current, [key]: value }))
+    setFormValidated(false)
+    setFormMessage('')
+  }
+
+  const toggleFormChoice = (key: 'seasons', value: string) => {
+    setRecipeForm((current) => ({
+      ...current,
+      [key]: current.seasons.includes(value)
+        ? current.seasons.filter((season) => season !== value)
+        : [...current.seasons, value],
+    }))
+    setFormValidated(false)
+  }
+
+  const getRecipeFormErrors = () => {
+    const errors: string[] = []
+    if (!recipeForm.name.trim()) errors.push('Ajoute le nom du plat.')
+    if (!recipeForm.moments) errors.push('Choisis au moins un moment.')
+    if (recipeForm.seasons.length === 0) errors.push('Choisis au moins une saison.')
+    return errors
+  }
+
+  const validateRecipeForm = () => {
+    const errors = getRecipeFormErrors()
+    setFormErrors(errors)
+    setFormValidated(errors.length === 0)
+    return errors.length === 0 ? toRecipeInsertPayload(recipeForm) : null
+  }
+
+  const postRecipe = async (payload: RecipeInsertPayload) => {
+    const response = await fetch('/api/recipes', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (response.status === 401) {
+      setPasswordPrompt(true)
+      setFormValidated(false)
+      return false
+    }
+
+    if (!response.ok) throw new Error('La recette n’a pas pu être enregistrée.')
+    return true
+  }
+
+  const handleAddRecipe = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const payload = validateRecipeForm()
+    if (!payload) return
+
+    setIsSubmittingRecipe(true)
+    setFormMessage('')
+
+    try {
+      if (passwordPrompt) {
+        if (!adminPassword) {
+          setFormMessage('Saisis le mot de passe partagé pour continuer.')
+          return
+        }
+
+        const loginResponse = await fetch('/api/auth/login', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: adminPassword }),
+        })
+
+        if (!loginResponse.ok) {
+          setFormMessage('Mot de passe incorrect.')
+          return
+        }
+      }
+
+      const saved = await postRecipe(payload)
+      if (!saved) return
+
+      const refreshedRecipes = await loadRecipes()
+      setAvailableRecipes(refreshedRecipes)
+      setFormValidated(true)
+      setFormMessage('Plat ajouté. Il est maintenant disponible dans votre bibliothèque.')
+      setPasswordPrompt(false)
+      setAdminPassword('')
+      setRecipeForm(emptyRecipeForm)
+    } catch (error) {
+      setFormMessage(error instanceof Error ? error.message : 'Une erreur est survenue.')
+    } finally {
+      setIsSubmittingRecipe(false)
+    }
+  }
+
   const updateMeal = (day: string, slot: MealSlot) => {
     const key = getMealKey(day, slot)
 
@@ -181,6 +295,101 @@ function App() {
               Continuer <span aria-hidden="true">↗</span>
             </button>
           </div>
+        </section>
+      </main>
+    )
+  }
+
+  if (screen === 'add') {
+    return (
+      <main className="home-page journey-page add-page">
+        <JourneyHeader onBack={() => setScreen('home')} />
+        <section className="journey-step add-step" aria-labelledby="add-title">
+          <div className="step-heading add-heading">
+            <span className="step-count">＋</span>
+            <p className="eyebrow">Votre bibliothèque, vos idées</p>
+            <h1 id="add-title">Ajouter un plat</h1>
+            <p className="step-intro">Un plat de plus dans la marmite, ça ne se refuse pas.</p>
+          </div>
+
+          <form className="recipe-form" onSubmit={handleAddRecipe} noValidate>
+            <FormField label="Nom du plat" required error={formErrors.includes('Ajoute le nom du plat.')}>
+              <input
+                className="form-input"
+                type="text"
+                placeholder="Ex. Lasagnes de mamie"
+                value={recipeForm.name}
+                onChange={(event) => updateRecipeForm('name', event.target.value)}
+                aria-invalid={formErrors.includes('Ajoute le nom du plat.')}
+              />
+            </FormField>
+
+            <FormChoiceGroup label="Quand peut-on le manger ?" required error={formErrors.includes('Choisis au moins un moment.')}>
+              <ChoiceButtons values={['Midi', 'Soir', 'Les deux']} selected={recipeForm.moments ? [recipeForm.moments] : []} onToggle={(value) => updateRecipeForm('moments', value as RecipeFormValues['moments'])} single />
+            </FormChoiceGroup>
+
+            <FormChoiceGroup label="Quand peut-on le cuisiner ?">
+              <ChoiceButtons values={['Semaine', 'Week-end', 'Tous les jours']} selected={[recipeForm.weekType]} onToggle={(value) => updateRecipeForm('weekType', value as RecipeFormValues['weekType'])} single />
+            </FormChoiceGroup>
+
+            <FormChoiceGroup label="Saison" required error={formErrors.includes('Choisis au moins une saison.')}>
+              <ChoiceButtons values={['Printemps', 'Été', 'Automne', 'Hiver', "Toute l'année"]} selected={recipeForm.seasons} onToggle={(value) => toggleFormChoice('seasons', value)} />
+            </FormChoiceGroup>
+
+            <FormChoiceGroup label="Temps">
+              <ChoiceButtons values={['Express · 15 min max', 'Rapide · 16 à 30 min', 'Normal · plus de 30 min']} selected={[recipeForm.time === 'Express' ? 'Express · 15 min max' : recipeForm.time === 'Normal' ? 'Normal · plus de 30 min' : 'Rapide · 16 à 30 min']} onToggle={(value) => updateRecipeForm('time', value.split(' · ')[0] as RecipeFormValues['time'])} single />
+            </FormChoiceGroup>
+
+            <FormChoiceGroup label="Type">
+              <ChoiceButtons values={['Végétarien', 'Viande', 'Poisson']} selected={[recipeForm.type]} onToggle={(value) => updateRecipeForm('type', value as RecipeFormValues['type'])} single />
+            </FormChoiceGroup>
+
+            <FormChoiceGroup label="Féculent principal">
+              <ChoiceButtons values={['Aucun', 'Pâtes', 'Riz', 'Pommes de terre', 'Semoule', 'Pain', 'Gnocchis', 'Légumineuses', 'Autre']} selected={[recipeForm.starch]} onToggle={(value) => updateRecipeForm('starch', value)} single />
+            </FormChoiceGroup>
+
+            <FormChoiceGroup label="Style">
+              <ChoiceButtons values={['Healthy', 'Gourmand']} selected={[recipeForm.style]} onToggle={(value) => updateRecipeForm('style', value as RecipeFormValues['style'])} single />
+            </FormChoiceGroup>
+
+            <FormChoiceGroup label="Est-ce un classique ?">
+              <ChoiceButtons values={['Oui', 'Non']} selected={[recipeForm.classic]} onToggle={(value) => updateRecipeForm('classic', value as RecipeFormValues['classic'])} single />
+            </FormChoiceGroup>
+
+            <FormField label="Lien vers la recette">
+              <input className="form-input" type="url" placeholder="https://... (facultatif)" value={recipeForm.link} onChange={(event) => updateRecipeForm('link', event.target.value)} />
+            </FormField>
+
+            {passwordPrompt && (
+              <FormField label="Mot de passe partagé" required>
+                <input
+                  className="form-input"
+                  type="password"
+                  placeholder="Mot de passe"
+                  value={adminPassword}
+                  onChange={(event) => { setAdminPassword(event.target.value); setFormMessage('') }}
+                  autoComplete="current-password"
+                />
+              </FormField>
+            )}
+
+            {formErrors.length > 0 && (
+              <p className="form-feedback form-error" role="alert">Il manque encore : {formErrors.join(' ')}</p>
+            )}
+            {formValidated && !formMessage && (
+              <p className="form-feedback form-success" role="status">Le formulaire est valide. L'enregistrement sera disponible bientôt.</p>
+            )}
+            {formMessage && (
+              <p className={`form-feedback ${formValidated ? 'form-success' : 'form-error'}`} role="status">{formMessage}</p>
+            )}
+
+            <div className="form-actions">
+              <button className="primary-button" type="submit" disabled={isSubmittingRecipe}>
+                {isSubmittingRecipe ? 'Ajout en cours…' : 'Ajouter le plat'} <span aria-hidden="true">↗</span>
+              </button>
+              <button className="secondary-button" type="button" onClick={() => setScreen('home')}>Retour</button>
+            </div>
+          </form>
         </section>
       </main>
     )
@@ -426,11 +635,11 @@ function App() {
         </div>
 
         <div className="choice-grid">
-          <button className="choice-card choice-card-add" type="button" disabled>
+          <button className="choice-card choice-card-add" type="button" onClick={() => { setScreen('add'); setFormErrors([]); setFormValidated(false) }}>
             <span className="card-icon" aria-hidden="true">＋</span>
             <span className="choice-content">
               <strong>Ajouter un plat</strong>
-              <span>Bientôt disponible</span>
+              <span>Créer une nouvelle idée</span>
             </span>
             <span className="card-arrow" aria-hidden="true">↗</span>
           </button>
@@ -606,6 +815,66 @@ function RecipePicker({ meal, availableRecipes, search, onSearch, onChoose, onCl
           )}
         </div>
       </section>
+    </div>
+  )
+}
+
+type FormFieldProps = {
+  label: string
+  required?: boolean
+  error?: boolean
+  children: React.ReactNode
+}
+
+function FormField({ label, required, error, children }: FormFieldProps) {
+  return (
+    <div className={`form-field ${error ? 'has-error' : ''}`}>
+      <label className="form-label">
+        {label} {required && <span aria-hidden="true">*</span>}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+type FormChoiceGroupProps = {
+  label: string
+  required?: boolean
+  error?: boolean
+  children: React.ReactNode
+}
+
+function FormChoiceGroup({ label, required, error, children }: FormChoiceGroupProps) {
+  return (
+    <fieldset className={`form-field form-choice-group ${error ? 'has-error' : ''}`}>
+      <legend className="form-label">{label} {required && <span aria-hidden="true">*</span>}</legend>
+      {children}
+    </fieldset>
+  )
+}
+
+type ChoiceButtonsProps = {
+  values: string[]
+  selected: string[]
+  onToggle: (value: string) => void
+  single?: boolean
+}
+
+function ChoiceButtons({ values, selected, onToggle, single }: ChoiceButtonsProps) {
+  return (
+    <div className="choice-buttons" role="group">
+      {values.map((value) => (
+        <button
+          className={`choice-pill ${selected.includes(value) ? 'is-selected' : ''}`}
+          type="button"
+          key={value}
+          aria-pressed={selected.includes(value)}
+          onClick={() => onToggle(value)}
+        >
+          {value}
+          {single && selected.includes(value) && <span aria-hidden="true">✓</span>}
+        </button>
+      ))}
     </div>
   )
 }

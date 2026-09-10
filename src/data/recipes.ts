@@ -6,12 +6,13 @@ export type Recipe = {
   name: string
   moments: MealMoment[]
   weekType: WeekType
-  season: string
+  seasons: string[]
   time: 'Express' | 'Rapide' | 'Normal'
-  type: 'Végétarien' | 'Viande'
+  type: 'Végétarien' | 'Viande' | 'Poisson'
   starch?: string
   classic: boolean
   style: 'Gourmand' | 'Healthy'
+  recipeUrl?: string
 }
 
 export const recipes: Recipe[] = [
@@ -20,7 +21,7 @@ export const recipes: Recipe[] = [
     name: 'Gnocchis crème de parmesan',
     moments: ['Soir'],
     weekType: 'Tous les jours',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Rapide',
     type: 'Végétarien',
     starch: 'Gnocchis',
@@ -32,7 +33,7 @@ export const recipes: Recipe[] = [
     name: 'Œufs mollets + potatoes + haricots verts',
     moments: ['Midi', 'Soir'],
     weekType: 'Semaine',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Rapide',
     type: 'Végétarien',
     starch: 'Pommes de terre',
@@ -44,7 +45,7 @@ export const recipes: Recipe[] = [
     name: 'Omelette complète',
     moments: ['Midi', 'Soir'],
     weekType: 'Tous les jours',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Express',
     type: 'Végétarien',
     classic: false,
@@ -55,7 +56,7 @@ export const recipes: Recipe[] = [
     name: 'Lentilles + cordons bleus',
     moments: ['Soir'],
     weekType: 'Tous les jours',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Normal',
     type: 'Viande',
     starch: 'Lentilles',
@@ -67,7 +68,7 @@ export const recipes: Recipe[] = [
     name: 'Chili sin carne + riz',
     moments: ['Midi', 'Soir'],
     weekType: 'Tous les jours',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Rapide',
     type: 'Végétarien',
     starch: 'Riz',
@@ -79,7 +80,7 @@ export const recipes: Recipe[] = [
     name: 'Pois chiches au four, sauce tomate harissa, tzatziki + pain pita',
     moments: ['Soir'],
     weekType: 'Tous les jours',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Rapide',
     type: 'Végétarien',
     classic: false,
@@ -90,7 +91,7 @@ export const recipes: Recipe[] = [
     name: 'Fajitas',
     moments: ['Soir'],
     weekType: 'Tous les jours',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Express',
     type: 'Végétarien',
     classic: false,
@@ -101,7 +102,7 @@ export const recipes: Recipe[] = [
     name: 'Poulet sauce soja + riz + légumes',
     moments: ['Soir'],
     weekType: 'Tous les jours',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Rapide',
     type: 'Viande',
     starch: 'Riz',
@@ -113,7 +114,7 @@ export const recipes: Recipe[] = [
     name: 'Poulet en tranche + pommes de terre + petits pois/carottes',
     moments: ['Soir'],
     weekType: 'Tous les jours',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Rapide',
     type: 'Viande',
     starch: 'Pommes de terre',
@@ -125,7 +126,7 @@ export const recipes: Recipe[] = [
     name: 'Pâtes sauce arrabbiata',
     moments: ['Soir'],
     weekType: 'Tous les jours',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Express',
     type: 'Végétarien',
     starch: 'Pâtes',
@@ -137,7 +138,7 @@ export const recipes: Recipe[] = [
     name: 'Pâtes pesto alla calabrese',
     moments: ['Midi', 'Soir'],
     weekType: 'Tous les jours',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Express',
     type: 'Végétarien',
     starch: 'Pâtes',
@@ -149,7 +150,7 @@ export const recipes: Recipe[] = [
     name: 'Nuggets + pâtes',
     moments: ['Midi', 'Soir'],
     weekType: 'Tous les jours',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Rapide',
     type: 'Viande',
     starch: 'Pâtes',
@@ -161,7 +162,7 @@ export const recipes: Recipe[] = [
     name: 'Galettes complètes jambon, œuf, fromage + salade',
     moments: ['Midi', 'Soir'],
     weekType: 'Tous les jours',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Express',
     type: 'Viande',
     classic: true,
@@ -172,7 +173,7 @@ export const recipes: Recipe[] = [
     name: 'Samosas chèvre, miel et noix',
     moments: ['Soir'],
     weekType: 'Week-end',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Normal',
     type: 'Végétarien',
     classic: false,
@@ -183,7 +184,7 @@ export const recipes: Recipe[] = [
     name: 'Steak haché + pommes de terre + haricots verts ou petits pois/carottes',
     moments: ['Soir'],
     weekType: 'Tous les jours',
-    season: "Toute l'année",
+    seasons: ["Toute l'année"],
     time: 'Rapide',
     type: 'Viande',
     starch: 'Pommes de terre',
