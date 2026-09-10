@@ -1,0 +1,9 @@
+Nom du plat,Gnocchis crème de parmesan,Œufs mollets + potatoes + haricots verts,Omelette complète,Lentilles + cordons bleus,Chili sin carne + riz,"Pois chiches au four, sauce tomate harissa, tzatziki + pain pita",Fajitas,Poulet sauce soja + riz + légumes,Poulet en tranche + pommes de terre + petits pois/carottes,Pâtes sauce arrabbiata,Pâtes pesto alla calabrese,Nuggets + pâtes,"Galettes complètes jambon, œuf, fromage + salade","Samosas chèvre, miel et noix",Steak haché + pommes de terre + haricots verts ou petits pois/carottes
+Moment,Soir,Les deux,Les deux,Soir,Les deux,Soir,Soir,Soir,Soir,Les deux,Les deux,Les deux,Soir,Les deux,Soir
+,Les deux,Semaine,Les deux,Les deux,Les deux,Les deux,Les deux,Les deux,Les deux,Les deux,Les deux,Les deux,Les deux,Weekend,Les deux
+Saison,Toute l'année,Toute l'année,Toute l'année,Toute l'année,Toute l'année,Toute l'année,Toute l'année,Toute l'année,Toute l'année,Toute l'année,Toute l'année,Toute l'année,Toute l'année,Toute l'année,Toute l'année
+Temps,Rapide,Rapide,Express,Normal,Rapide,Rapide,Express,Rapide,Rapide,Express,Express,Rapide,Express,Normal,Rapide
+Type,Végétarien,Végétarien,Végétarien,Viande,Végétarien,Végétarien,Végétarien,Viande,Viande,Végétarien,Végétarien,Viande,Viande,Végétarien,Viande
+Féculent principal,Gnocchis,Pomme de Terre,Aucun,Lentilles,Riz,Aucun,Aucun,Riz,Pomme de Terre,Pâtes,Pâtes,Pâtes,Aucun,Aucun,Pomme de Terre
+Classique,Non,Oui,Non,Non,Non,Non,Non,Non,Non,Oui,Oui,Non,Oui,Non,Non
+Style,Gourmand,Healthy,Healthy,Gourmand,Healthy,Healthy,Healthy,Gourmand,Healthy,Gourmand,Gourmand,Gourmand,Healthy,Gourmand,Healthy

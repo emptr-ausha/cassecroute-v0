@@ -1,0 +1,21 @@
+:root {
+  font-family: 'Trebuchet MS', 'Avenir Next', sans-serif;
+  color: #261b18;
+  background: #f8edda;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --ink: #261b18;
+  --cream: #f8edda;
+  --paper: #fff9ed;
+  --red: #e84835;
+  --orange: #f28c28;
+  --yellow: #ffd166;
+  --line: rgba(38, 27, 24, 0.16);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
