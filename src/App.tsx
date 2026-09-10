@@ -18,13 +18,13 @@ type DisplayMeal = (GeneratedMenu[string] | MenuRequest) & { isLeftovers?: boole
 const emptyRecipeForm: RecipeFormValues = {
   name: '',
   moments: '',
-  weekType: 'Tous les jours',
-  seasons: ["Toute l'année"],
-  time: 'Rapide',
-  type: 'Végétarien',
-  starch: 'Aucun',
-  style: 'Healthy',
-  classic: 'Non',
+  weekType: '',
+  seasons: [],
+  time: '',
+  type: '',
+  starch: '',
+  style: '',
+  classic: '',
   link: '',
 }
 
@@ -151,7 +151,13 @@ function App() {
     const errors: string[] = []
     if (!recipeForm.name.trim()) errors.push('Ajoute le nom du plat.')
     if (!recipeForm.moments) errors.push('Choisis au moins un moment.')
+    if (!recipeForm.weekType) errors.push('Choisis quand le plat peut être cuisiné.')
     if (recipeForm.seasons.length === 0) errors.push('Choisis au moins une saison.')
+    if (!recipeForm.time) errors.push('Choisis un temps de préparation.')
+    if (!recipeForm.type) errors.push('Choisis un type de plat.')
+    if (!recipeForm.starch) errors.push('Choisis un féculent principal.')
+    if (!recipeForm.style) errors.push('Choisis un style.')
+    if (!recipeForm.classic) errors.push('Indique si le plat est un classique.')
     return errors
   }
 
@@ -328,32 +334,32 @@ function App() {
               <ChoiceButtons values={['Midi', 'Soir', 'Les deux']} selected={recipeForm.moments ? [recipeForm.moments] : []} onToggle={(value) => updateRecipeForm('moments', value as RecipeFormValues['moments'])} single />
             </FormChoiceGroup>
 
-            <FormChoiceGroup label="Quand peut-on le cuisiner ?">
-              <ChoiceButtons values={['Semaine', 'Week-end', 'Tous les jours']} selected={[recipeForm.weekType]} onToggle={(value) => updateRecipeForm('weekType', value as RecipeFormValues['weekType'])} single />
+            <FormChoiceGroup label="Quand peut-on le cuisiner ?" required error={formErrors.includes('Choisis quand le plat peut être cuisiné.')}>
+              <ChoiceButtons values={['Semaine', 'Week-end', 'Tous les jours']} selected={recipeForm.weekType ? [recipeForm.weekType] : []} onToggle={(value) => updateRecipeForm('weekType', value as RecipeFormValues['weekType'])} single />
             </FormChoiceGroup>
 
             <FormChoiceGroup label="Saison" required error={formErrors.includes('Choisis au moins une saison.')}>
               <ChoiceButtons values={['Printemps', 'Été', 'Automne', 'Hiver', "Toute l'année"]} selected={recipeForm.seasons} onToggle={(value) => toggleFormChoice('seasons', value)} />
             </FormChoiceGroup>
 
-            <FormChoiceGroup label="Temps">
-              <ChoiceButtons values={['Express · 15 min max', 'Rapide · 16 à 30 min', 'Normal · plus de 30 min']} selected={[recipeForm.time === 'Express' ? 'Express · 15 min max' : recipeForm.time === 'Normal' ? 'Normal · plus de 30 min' : 'Rapide · 16 à 30 min']} onToggle={(value) => updateRecipeForm('time', value.split(' · ')[0] as RecipeFormValues['time'])} single />
+            <FormChoiceGroup label="Temps" required error={formErrors.includes('Choisis un temps de préparation.')}>
+              <ChoiceButtons values={['Express · 15 min max', 'Rapide · 16 à 30 min', 'Normal · plus de 30 min']} selected={recipeForm.time ? [recipeForm.time === 'Express' ? 'Express · 15 min max' : recipeForm.time === 'Normal' ? 'Normal · plus de 30 min' : 'Rapide · 16 à 30 min'] : []} onToggle={(value) => updateRecipeForm('time', value.split(' · ')[0] as RecipeFormValues['time'])} single />
             </FormChoiceGroup>
 
-            <FormChoiceGroup label="Type">
-              <ChoiceButtons values={['Végétarien', 'Viande', 'Poisson']} selected={[recipeForm.type]} onToggle={(value) => updateRecipeForm('type', value as RecipeFormValues['type'])} single />
+            <FormChoiceGroup label="Type" required error={formErrors.includes('Choisis un type de plat.')}>
+              <ChoiceButtons values={['Végétarien', 'Viande', 'Poisson']} selected={recipeForm.type ? [recipeForm.type] : []} onToggle={(value) => updateRecipeForm('type', value as RecipeFormValues['type'])} single />
             </FormChoiceGroup>
 
-            <FormChoiceGroup label="Féculent principal">
-              <ChoiceButtons values={['Aucun', 'Pâtes', 'Riz', 'Pommes de terre', 'Semoule', 'Pain', 'Gnocchis', 'Légumineuses', 'Autre']} selected={[recipeForm.starch]} onToggle={(value) => updateRecipeForm('starch', value)} single />
+            <FormChoiceGroup label="Féculent principal" required error={formErrors.includes('Choisis un féculent principal.')}>
+              <ChoiceButtons values={['Aucun', 'Pâtes', 'Riz', 'Pommes de terre', 'Semoule', 'Pain', 'Gnocchis', 'Légumineuses', 'Autre']} selected={recipeForm.starch ? [recipeForm.starch] : []} onToggle={(value) => updateRecipeForm('starch', value)} single />
             </FormChoiceGroup>
 
-            <FormChoiceGroup label="Style">
-              <ChoiceButtons values={['Healthy', 'Gourmand']} selected={[recipeForm.style]} onToggle={(value) => updateRecipeForm('style', value as RecipeFormValues['style'])} single />
+            <FormChoiceGroup label="Style" required error={formErrors.includes('Choisis un style.')}>
+              <ChoiceButtons values={['Healthy', 'Gourmand']} selected={recipeForm.style ? [recipeForm.style] : []} onToggle={(value) => updateRecipeForm('style', value as RecipeFormValues['style'])} single />
             </FormChoiceGroup>
 
-            <FormChoiceGroup label="Est-ce un classique ?">
-              <ChoiceButtons values={['Oui', 'Non']} selected={[recipeForm.classic]} onToggle={(value) => updateRecipeForm('classic', value as RecipeFormValues['classic'])} single />
+            <FormChoiceGroup label="Est-ce un classique ?" required error={formErrors.includes('Indique si le plat est un classique.')}>
+              <ChoiceButtons values={['Oui', 'Non']} selected={recipeForm.classic ? [recipeForm.classic] : []} onToggle={(value) => updateRecipeForm('classic', value as RecipeFormValues['classic'])} single />
             </FormChoiceGroup>
 
             <FormField label="Lien vers la recette">

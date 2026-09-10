@@ -1,13 +1,13 @@
 export type RecipeFormValues = {
   name: string
   moments: '' | 'Midi' | 'Soir' | 'Les deux'
-  weekType: 'Semaine' | 'Week-end' | 'Tous les jours'
+  weekType: '' | 'Semaine' | 'Week-end' | 'Tous les jours'
   seasons: string[]
-  time: 'Express' | 'Rapide' | 'Normal'
-  type: 'Végétarien' | 'Viande' | 'Poisson'
+  time: '' | 'Express' | 'Rapide' | 'Normal'
+  type: '' | 'Végétarien' | 'Viande' | 'Poisson'
   starch: string
-  style: 'Healthy' | 'Gourmand'
-  classic: 'Oui' | 'Non'
+  style: '' | 'Healthy' | 'Gourmand'
+  classic: '' | 'Oui' | 'Non'
   link: string
 }
 
@@ -31,12 +31,12 @@ export const toRecipeInsertPayload = (form: RecipeFormValues): RecipeInsertPaylo
     : form.moments
       ? [form.moments]
       : [],
-  week_type: form.weekType,
+  week_type: form.weekType as RecipeInsertPayload['week_type'],
   seasons: form.seasons,
-  time: form.time,
-  type: form.type,
+  time: form.time as RecipeInsertPayload['time'],
+  type: form.type as RecipeInsertPayload['type'],
   starch: form.starch === 'Aucun' ? null : form.starch,
   classic: form.classic === 'Oui',
-  style: form.style,
+  style: form.style as RecipeInsertPayload['style'],
   recipe_url: form.link.trim() || null,
 })
