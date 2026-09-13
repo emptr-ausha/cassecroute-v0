@@ -47,6 +47,11 @@ const getDinnerNeighborStarches = (
   return neighborStarches
 }
 
+const getSameDayStarches = (request: MenuRequest, menu: GeneratedMenu) =>
+  Object.values(menu)
+    .filter((meal) => meal.dayIndex === request.dayIndex && meal.recipe.starch)
+    .map((meal) => meal.recipe.starch as string)
+
 const getPreviousDinner = (request: MenuRequest, menu: GeneratedMenu) =>
   Object.values(menu).find(
     (meal) => meal.moment === 'Soir' && meal.dayIndex === request.dayIndex - 1,
@@ -92,8 +97,10 @@ const chooseRecipe = (
 
   if (compatibleRecipes.length === 0) return undefined
 
-  const neighborStarches =
-    request.moment === 'Soir' ? getDinnerNeighborStarches(request, menu) : []
+  const neighborStarches = [
+    ...getSameDayStarches(request, menu),
+    ...(request.moment === 'Soir' ? getDinnerNeighborStarches(request, menu) : []),
+  ]
   const withoutRepeatedStarch = compatibleRecipes.filter(
     (recipe) => !recipe.starch || !neighborStarches.includes(recipe.starch),
   )
@@ -152,8 +159,10 @@ export const replaceMeal = (
       isCompatible(recipe, request) &&
       isSeasonEligible(recipe, selectedSeasons),
   )
-  const neighborStarches =
-    request.moment === 'Soir' ? getDinnerNeighborStarches(request, menuWithoutMeal) : []
+  const neighborStarches = [
+    ...getSameDayStarches(request, menuWithoutMeal),
+    ...(request.moment === 'Soir' ? getDinnerNeighborStarches(request, menuWithoutMeal) : []),
+  ]
   const alternatives = compatibleRecipes.filter(
     (recipe) => !recipe.starch || !neighborStarches.includes(recipe.starch),
   )
