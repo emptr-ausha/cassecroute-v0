@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { recipes as localRecipes, type Recipe } from './data/recipes'
 import {
   generateMenu,
+  isSeasonEligible,
   replaceMeal,
   type GeneratedMenu,
   type MenuRequest,
@@ -39,12 +40,14 @@ const days = [
 ]
 
 const mealSlots: MealSlot[] = ['Midi', 'Soir']
+const seasons = ['Printemps', 'Été', 'Automne', 'Hiver']
 
 const getMealKey = (day: string, slot: MealSlot) => `${day}-${slot}`
 
 function App() {
   const [screen, setScreen] = useState<Screen>('home')
   const [defaultPeople, setDefaultPeople] = useState(2)
+  const [selectedSeasons, setSelectedSeasons] = useState<string[]>([])
   const [selectedMeals, setSelectedMeals] = useState<SelectedMeals>({})
   const [generatedMenu, setGeneratedMenu] = useState<GeneratedMenu>({})
   const [availableRecipes, setAvailableRecipes] = useState<Recipe[]>(localRecipes)
@@ -82,13 +85,13 @@ function App() {
     })
 
   const handleGenerate = () => {
-    setGeneratedMenu(generateMenu(getRequests(), availableRecipes))
+    setGeneratedMenu(generateMenu(getRequests(), availableRecipes, selectedSeasons))
     setLeftovers({})
     setScreen('menu')
   }
 
   const handleChange = (meal: MenuRequest) => {
-    setGeneratedMenu((current) => replaceMeal(meal, current, availableRecipes))
+    setGeneratedMenu((current) => replaceMeal(meal, current, availableRecipes, selectedSeasons))
     setLeftovers((current) => {
       const next = { ...current }
       delete next[meal.key]
@@ -122,6 +125,7 @@ function App() {
   const handleRestart = () => {
     setScreen('home')
     setDefaultPeople(2)
+    setSelectedSeasons([])
     setSelectedMeals({})
     setGeneratedMenu({})
     setLeftovers({})
@@ -220,6 +224,12 @@ function App() {
     })
   }
 
+  const toggleSeason = (season: string) => {
+    setSelectedSeasons((current) => current.includes(season)
+      ? current.filter((item) => item !== season)
+      : [...current, season])
+  }
+
   const setShortcut = (shortcut: 'all' | 'evenings' | 'week' | 'clear') => {
     if (shortcut === 'clear') {
       setSelectedMeals({})
@@ -248,31 +258,39 @@ function App() {
     return (
       <main className="home-page journey-page">
         <JourneyHeader onBack={() => setScreen('home')} />
-        <section className="journey-step people-step" aria-labelledby="people-title">
+        <section className="journey-step people-step season-step" aria-labelledby="season-title">
           <div className="step-heading">
             <span className="step-count">01</span>
-            <p className="eyebrow">On commence par le début</p>
-            <h1 id="people-title">Vous serez combien à table ?</h1>
-            <p className="step-intro">On adaptera chaque repas à votre tribu.</p>
+            <p className="eyebrow">ON COMMENCE PAR LE DÉBUT</p>
+            <h1 id="season-title">On est dans quelle saison ?</h1>
+            <p className="step-intro">On adaptera les suggestions à la période de l’année.</p>
           </div>
 
-          <div className="people-grid" role="group" aria-label="Nombre de personnes">
-            {[1, 2, 3, 4, 5, 6].map((people) => (
+          <div className="season-grid" role="group" aria-label="Saisons">
+            {seasons.map((season) => (
               <button
-                className={`people-choice ${defaultPeople === people ? 'is-selected' : ''}`}
-                key={people}
+                className={`people-choice season-choice ${selectedSeasons.includes(season) ? 'is-selected' : ''}`}
+                key={season}
                 type="button"
-                aria-pressed={defaultPeople === people}
-                onClick={() => setDefaultPeople(people)}
+                aria-pressed={selectedSeasons.includes(season)}
+                onClick={() => toggleSeason(season)}
               >
-                <strong>{people}</strong>
-                <span>{people === 1 ? 'personne' : 'personnes'}</span>
+                <strong>{season}</strong>
               </button>
             ))}
           </div>
 
+          <button
+            className={`season-all-choice ${selectedSeasons.includes("Toute l'année") ? 'is-selected' : ''}`}
+            type="button"
+            aria-pressed={selectedSeasons.includes("Toute l'année")}
+            onClick={() => toggleSeason("Toute l'année")}
+          >
+            Toute l’année <span aria-hidden="true">✦</span>
+          </button>
+
           <div className="journey-actions">
-            <button className="primary-button" type="button" onClick={() => setScreen('meals')}>
+            <button className="primary-button" type="button" disabled={selectedSeasons.length === 0} onClick={() => setScreen('meals')}>
               Continuer <span aria-hidden="true">↗</span>
             </button>
           </div>
@@ -426,6 +444,7 @@ function App() {
             <RecipePicker
               meal={getRequests().find((request) => request.key === pickerKey)}
               availableRecipes={availableRecipes}
+              selectedSeasons={selectedSeasons}
               search={recipeSearch}
               onSearch={setRecipeSearch}
               onChoose={handleChooseRecipe}
@@ -734,17 +753,19 @@ function ConfirmationMeal({ meal }: ConfirmationMealProps) {
 type RecipePickerProps = {
   meal: MenuRequest | undefined
   availableRecipes: Recipe[]
+  selectedSeasons: string[]
   search: string
   onSearch: (value: string) => void
   onChoose: (meal: MenuRequest, recipeId: string) => void
   onClose: () => void
 }
 
-function RecipePicker({ meal, availableRecipes, search, onSearch, onChoose, onClose }: RecipePickerProps) {
+function RecipePicker({ meal, availableRecipes, selectedSeasons, search, onSearch, onChoose, onClose }: RecipePickerProps) {
   if (!meal) return null
 
   const compatibleRecipes = availableRecipes
     .filter((recipe) => recipe.moments.includes(meal.moment))
+    .filter((recipe) => isSeasonEligible(recipe, selectedSeasons))
     .filter((recipe) => recipe.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
 
   return (

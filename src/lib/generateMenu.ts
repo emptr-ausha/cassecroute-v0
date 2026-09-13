@@ -16,6 +16,7 @@ export type GeneratedMenu = Record<string, GeneratedMeal>
 
 type GenerationContext = {
   requests: MenuRequest[]
+  selectedSeasons: string[]
   currentMenu?: GeneratedMenu
   replacingKey?: string
 }
@@ -24,6 +25,11 @@ const isWeekday = (request: MenuRequest) => request.dayIndex < 5
 
 const isCompatible = (recipe: Recipe, request: MenuRequest) =>
   recipe.moments.includes(request.moment)
+
+export const isSeasonEligible = (recipe: Recipe, selectedSeasons: string[]) =>
+  recipe.seasons.includes("Toute l'année") ||
+  selectedSeasons.includes("Toute l'année") ||
+  recipe.seasons.some((season) => selectedSeasons.includes(season))
 
 const getDinnerNeighborStarches = (
   request: MenuRequest,
@@ -75,11 +81,14 @@ const chooseRecipe = (
   request: MenuRequest,
   availableRecipes: Recipe[],
   menu: GeneratedMenu,
+  selectedSeasons: string[],
 ) => {
   const unusedRecipes = availableRecipes.filter(
     (recipe) => !Object.values(menu).some((meal) => meal.recipe.id === recipe.id),
   )
-  const compatibleRecipes = unusedRecipes.filter((recipe) => isCompatible(recipe, request))
+  const compatibleRecipes = unusedRecipes.filter(
+    (recipe) => isCompatible(recipe, request) && isSeasonEligible(recipe, selectedSeasons),
+  )
 
   if (compatibleRecipes.length === 0) return undefined
 
@@ -95,7 +104,12 @@ const chooseRecipe = (
   )[0]
 }
 
-const buildMenu = (requests: MenuRequest[], availableRecipes: Recipe[], existingMenu: GeneratedMenu = {}) => {
+const buildMenu = (
+  requests: MenuRequest[],
+  availableRecipes: Recipe[],
+  selectedSeasons: string[],
+  existingMenu: GeneratedMenu = {},
+) => {
   const menu: GeneratedMenu = { ...existingMenu }
 
   requests
@@ -105,20 +119,24 @@ const buildMenu = (requests: MenuRequest[], availableRecipes: Recipe[], existing
       return first.dayIndex - second.dayIndex
     })
     .forEach((request) => {
-      const recipe = chooseRecipe(request, availableRecipes, menu)
+      const recipe = chooseRecipe(request, availableRecipes, menu, selectedSeasons)
       if (recipe) menu[request.key] = { ...request, recipe }
     })
 
   return menu
 }
 
-export const generateMenu = (requests: MenuRequest[], availableRecipes: Recipe[]): GeneratedMenu =>
-  buildMenu(requests, availableRecipes)
+export const generateMenu = (
+  requests: MenuRequest[],
+  availableRecipes: Recipe[],
+  selectedSeasons: string[],
+): GeneratedMenu => buildMenu(requests, availableRecipes, selectedSeasons)
 
 export const replaceMeal = (
   request: MenuRequest,
   currentMenu: GeneratedMenu,
   availableRecipes: Recipe[],
+  selectedSeasons: string[],
 ): GeneratedMenu => {
   const currentRecipeId = currentMenu[request.key]?.recipe.id
   const menuWithoutMeal = { ...currentMenu }
@@ -131,7 +149,8 @@ export const replaceMeal = (
     (recipe) =>
       recipe.id !== currentRecipeId &&
       !otherRecipeIds.has(recipe.id) &&
-      isCompatible(recipe, request),
+      isCompatible(recipe, request) &&
+      isSeasonEligible(recipe, selectedSeasons),
   )
   const neighborStarches =
     request.moment === 'Soir' ? getDinnerNeighborStarches(request, menuWithoutMeal) : []
@@ -151,9 +170,9 @@ export const replaceMeal = (
   }
 }
 
-export const regenerateMenu = ({ requests, currentMenu, replacingKey }: GenerationContext, availableRecipes: Recipe[]) => {
-  if (!replacingKey || !currentMenu) return generateMenu(requests, availableRecipes)
+export const regenerateMenu = ({ requests, selectedSeasons, currentMenu, replacingKey }: GenerationContext, availableRecipes: Recipe[]) => {
+  if (!replacingKey || !currentMenu) return generateMenu(requests, availableRecipes, selectedSeasons)
 
   const request = requests.find((item) => item.key === replacingKey)
-  return request ? replaceMeal(request, currentMenu, availableRecipes) : currentMenu
+  return request ? replaceMeal(request, currentMenu, availableRecipes, selectedSeasons) : currentMenu
 }
