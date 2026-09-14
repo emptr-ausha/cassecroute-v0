@@ -1275,3 +1275,60 @@ h1 {
     max-height: 48vh;
   }
 }
+
+.history-nav-button {
+  padding: 0.55rem 0.85rem;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--paper);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.history-nav-button:hover { background: var(--yellow); }
+.history-nav-button:focus-visible,
+.history-card:focus-visible { outline: 3px solid var(--red); outline-offset: 5px; }
+.history-step .step-count { background: var(--orange); }
+.history-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.75rem; margin-top: 3rem; }
+.history-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  padding: 1.6rem;
+  min-width: 0;
+  text-align: left;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 1.3rem;
+  box-shadow: 5px 5px 0 var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.history-card:hover { box-shadow: 5px 5px 0 var(--red); }
+.history-card-top { display: flex; justify-content: space-between; color: var(--red); font-size: 0.75rem; font-weight: 800; }
+.history-period { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(1.35rem, 2.5vw, 1.9rem); font-weight: 700; overflow-wrap: anywhere; }
+.history-calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); padding-block: 1rem; border-block: 1px solid var(--line); }
+.history-calendar-day { display: flex; align-items: center; flex-direction: column; gap: 0.55rem; font-size: 0.7rem; }
+.history-calendar-day strong { font-family: Georgia, 'Times New Roman', serif; font-size: 1.3rem; }
+.history-dots { display: flex; gap: 4px; }
+.history-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--line); }
+.history-dots .is-filled { background: var(--red); }
+.history-preview { display: grid; gap: 0.45rem; font-size: 0.9rem; line-height: 1.4; overflow-wrap: anywhere; }
+.history-open { margin-top: auto; padding-top: 0.5rem; font-size: 0.8rem; font-weight: 800; }
+.history-state { max-width: 620px; margin: 3rem auto 0; padding: 2rem; text-align: center; background: var(--paper); border: 2px solid var(--ink); border-radius: 1.2rem; }
+.history-state h2 { font-family: Georgia, 'Times New Roman', serif; font-size: 1.8rem; }
+.history-state p { line-height: 1.6; }
+.history-moment { color: var(--red); font-size: 0.75rem; font-weight: 800; }
+.history-detail strong { overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .history-grid { grid-template-columns: 1fr; }
+  .history-card { padding: 1.2rem; }
+  .history-nav-button { margin-left: auto; }
+  .journey-header .history-nav-button { margin-left: 0; }
+  .history-state { padding: 1.25rem; }
+  .history-step .step-heading h1 { font-size: 2.4rem; }
+}

@@ -9,9 +9,10 @@ import {
 } from './lib/generateMenu'
 import { loadRecipes } from './lib/recipeRepository'
 import { type RecipeFormValues, type RecipeInsertPayload, toRecipeInsertPayload } from './lib/recipePayload'
+import { History } from './components/History'
 import './App.css'
 
-type Screen = 'home' | 'add' | 'people' | 'meals' | 'menu' | 'confirmed'
+type Screen = 'home' | 'add' | 'people' | 'meals' | 'menu' | 'confirmed' | 'history'
 type MealSlot = 'Midi' | 'Soir'
 type SelectedMeals = Record<string, number>
 type Leftovers = Record<string, boolean>
@@ -46,6 +47,8 @@ const getMealKey = (day: string, slot: MealSlot) => `${day}-${slot}`
 
 function App() {
   const [screen, setScreen] = useState<Screen>('home')
+  const [historyOrigin, setHistoryOrigin] = useState<Screen>('home')
+  const openHistory = () => { setHistoryOrigin(screen); setScreen('history') }
   const [defaultPeople, setDefaultPeople] = useState(2)
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>([])
   const [selectedMeals, setSelectedMeals] = useState<SelectedMeals>({})
@@ -301,10 +304,14 @@ function App() {
     setSelectedMeals((current) => ({ ...current, [key]: people }))
   }
 
+  if (screen === 'history') {
+    return <History onBack={() => setScreen(historyOrigin)} onCompose={() => setScreen('people')} />
+  }
+
   if (screen === 'people') {
     return (
       <main className="home-page journey-page">
-        <JourneyHeader onBack={() => setScreen('home')} />
+        <JourneyHeader onHistory={openHistory} onBack={() => setScreen('home')} />
         <section className="journey-step people-step season-step" aria-labelledby="season-title">
           <div className="step-heading">
             <span className="step-count">01</span>
@@ -349,7 +356,7 @@ function App() {
   if (screen === 'add') {
     return (
       <main className="home-page journey-page add-page">
-        <JourneyHeader onBack={() => setScreen('home')} />
+        <JourneyHeader onHistory={openHistory} onBack={() => setScreen('home')} />
         <section className="journey-step add-step" aria-labelledby="add-title">
           <div className="step-heading add-heading">
             <span className="step-count">＋</span>
@@ -428,7 +435,7 @@ function App() {
   if (screen === 'menu') {
     return (
       <main className="home-page journey-page menu-page">
-        <JourneyHeader onBack={() => setScreen('meals')} />
+        <JourneyHeader onHistory={openHistory} onBack={() => setScreen('meals')} />
         <section className="journey-step menu-step" aria-labelledby="menu-title">
           <div className="step-heading menu-heading">
             <span className="step-count">03</span>
@@ -509,7 +516,7 @@ function App() {
   if (screen === 'confirmed') {
     return (
       <main className="home-page journey-page confirmation-page">
-        <JourneyHeader onBack={() => setScreen('menu')} />
+        <JourneyHeader onHistory={openHistory} onBack={() => setScreen('menu')} />
         <section className="journey-step confirmation-step" aria-labelledby="confirmation-title">
           <div className="step-heading confirmation-heading">
             <span className="step-count">✓</span>
@@ -565,7 +572,7 @@ function App() {
   if (screen === 'meals') {
     return (
       <main className="home-page journey-page">
-        <JourneyHeader onBack={() => setScreen('people')} />
+        <JourneyHeader onHistory={openHistory} onBack={() => setScreen('people')} />
         <section className="journey-step meals-step" aria-labelledby="meals-title">
           <div className="step-heading meals-heading">
             <span className="step-count">02</span>
@@ -643,6 +650,7 @@ function App() {
         <span className="brand-mark" aria-hidden="true">✳</span>
         <span className="brand-name">Cassecroute</span>
         <span className="topbar-note">La semaine, mais en mieux</span>
+        <button className="history-nav-button" type="button" onClick={openHistory}>Historique</button>
       </header>
 
       <section className="welcome" aria-labelledby="welcome-title">
@@ -688,9 +696,9 @@ function App() {
   )
 }
 
-type JourneyHeaderProps = { onBack: () => void }
+type JourneyHeaderProps = { onBack: () => void; onHistory: () => void }
 
-function JourneyHeader({ onBack }: JourneyHeaderProps) {
+function JourneyHeader({ onBack, onHistory }: JourneyHeaderProps) {
   return (
     <header className="topbar journey-header">
       <button className="back-button" type="button" onClick={onBack}>
@@ -698,6 +706,7 @@ function JourneyHeader({ onBack }: JourneyHeaderProps) {
       </button>
       <span className="brand-mark" aria-hidden="true">✳</span>
       <span className="brand-name">Cassecroute</span>
+      <button className="history-nav-button" type="button" onClick={onHistory}>Historique</button>
     </header>
   )
 }
