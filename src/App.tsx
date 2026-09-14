@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { recipes as localRecipes, type Recipe } from './data/recipes'
 import {
   generateMenu,
@@ -59,6 +59,10 @@ function App() {
   const [formValidated, setFormValidated] = useState(false)
   const [formMessage, setFormMessage] = useState('')
   const [isSubmittingRecipe, setIsSubmittingRecipe] = useState(false)
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null)
+  const [isSavingWeek, setIsSavingWeek] = useState(false)
+  const [saveError, setSaveError] = useState<{ snapshot: string; message: string } | null>(null)
+  const savingWeek = useRef(false)
 
   useEffect(() => {
     let isCurrent = true
@@ -85,6 +89,8 @@ function App() {
     })
 
   const handleGenerate = () => {
+    setSavedSnapshot(null)
+    setSaveError(null)
     setGeneratedMenu(generateMenu(getRequests(), availableRecipes, selectedSeasons))
     setLeftovers({})
     setScreen('menu')
@@ -123,6 +129,8 @@ function App() {
   }
 
   const handleRestart = () => {
+    setSavedSnapshot(null)
+    setSaveError(null)
     setScreen('home')
     setDefaultPeople(2)
     setSelectedSeasons([])
@@ -131,6 +139,45 @@ function App() {
     setLeftovers({})
     setPickerKey(null)
     setRecipeSearch('')
+  }
+
+  const displayedMeals: DisplayMeal[] = getRequests()
+    .sort((a, b) => a.dayIndex - b.dayIndex || mealSlots.indexOf(a.moment) - mealSlots.indexOf(b.moment))
+    .map((request) => leftovers[request.key]
+      ? { ...request, isLeftovers: true }
+      : generatedMenu[request.key] ?? request)
+  const snapshot = displayedMeals.map((meal) => ({
+    day_index: meal.dayIndex,
+    moment: meal.moment,
+    recipe_id: meal.isLeftovers ? null : 'recipe' in meal ? meal.recipe.id : null,
+    recipe_name: meal.isLeftovers ? '🥡 Restes' : 'recipe' in meal ? meal.recipe.name : 'Aucune proposition disponible',
+    is_leftovers: Boolean(meal.isLeftovers),
+  }))
+  const snapshotKey = JSON.stringify(snapshot)
+  const isWeekSaved = savedSnapshot === snapshotKey
+  const canSaveWeek = snapshot.length > 0 && snapshot.every((meal) => meal.is_leftovers || meal.recipe_id)
+
+  const handleSaveWeek = async () => {
+    if (savingWeek.current || isWeekSaved || !canSaveWeek) return
+    savingWeek.current = true
+    setIsSavingWeek(true)
+    setSaveError(null)
+    try {
+      const response = await fetch('/api/menu-weeks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meals: snapshot }),
+      })
+      if (!response.ok) throw new Error('Save failed')
+      const result = await response.json()
+      if (!result.week?.id) throw new Error('Invalid save response')
+      setSavedSnapshot(snapshotKey)
+    } catch {
+      setSaveError({ snapshot: snapshotKey, message: 'La semaine n’a pas pu être sauvegardée. Réessayez.' })
+    } finally {
+      savingWeek.current = false
+      setIsSavingWeek(false)
+    }
   }
 
   const updateRecipeForm = <Key extends keyof RecipeFormValues>(key: Key, value: RecipeFormValues[Key]) => {
@@ -473,23 +520,7 @@ function App() {
 
           <div className="confirmation-days">
             {days.map((day, dayIndex) => {
-              const dayMeals = mealSlots
-                .map((slot) => {
-                  const key = getMealKey(day, slot)
-                  if (!(key in selectedMeals)) return undefined
-
-                  const request = {
-                    key,
-                    day,
-                    dayIndex,
-                    moment: slot,
-                    people: selectedMeals[key],
-                  }
-
-                  if (leftovers[key]) return { ...request, isLeftovers: true }
-                  return generatedMenu[key] ?? request
-                })
-                .filter((meal) => meal !== undefined)
+              const dayMeals = displayedMeals.filter((meal) => meal.dayIndex === dayIndex)
 
               if (dayMeals.length === 0) return null
 
@@ -510,12 +541,21 @@ function App() {
           </div>
 
           <div className="confirmation-actions">
-            <button className="primary-button" type="button" onClick={() => setScreen('menu')}>
+            <button className="primary-button" type="button" onClick={handleSaveWeek}
+              disabled={isSavingWeek || isWeekSaved || !canSaveWeek} aria-busy={isSavingWeek}>
+              {isSavingWeek ? 'Sauvegarde en cours…' : isWeekSaved ? 'Semaine sauvegardée ✓' : 'Je sauvegarde cette semaine'}
+            </button>
+            <button className="secondary-button" type="button" onClick={() => setScreen('menu')}>
               Modifier ma semaine <span aria-hidden="true">←</span>
             </button>
             <button className="secondary-button" type="button" onClick={handleRestart}>
               Recommencer
             </button>
+          </div>
+          <div className="save-week-message" aria-live="polite">
+            {isWeekSaved && <p>Semaine sauvegardée ✓</p>}
+            {!canSaveWeek && <p>Choisissez une recette ou « Restes » pour chaque repas avant de sauvegarder.</p>}
+            {saveError?.snapshot === snapshotKey && <p role="alert">{saveError.message}</p>}
           </div>
         </section>
       </main>

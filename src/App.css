@@ -715,6 +715,12 @@ h1 {
   margin-top: 2.5rem;
 }
 
+.save-week-message {
+  text-align: center;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
 .secondary-button {
   padding: 1rem 1.35rem;
   color: var(--ink);

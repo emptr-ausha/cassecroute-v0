@@ -8,7 +8,7 @@ type VercelResponse = ServerResponse & {
 }
 
 type RecipePayload = {
-  name: unknown
+  name: string
   moments: unknown
   week_type: unknown
   seasons: unknown
