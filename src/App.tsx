@@ -9,6 +9,7 @@ import {
 } from './lib/generateMenu'
 import { loadRecipes } from './lib/recipeRepository'
 import { type RecipeFormValues, type RecipeInsertPayload, toRecipeInsertPayload } from './lib/recipePayload'
+import { loadPreviousRecipeIds } from './lib/historyRepository'
 import { History } from './components/History'
 import './App.css'
 
@@ -66,6 +67,8 @@ function App() {
   const [isSavingWeek, setIsSavingWeek] = useState(false)
   const [saveError, setSaveError] = useState<{ snapshot: string; message: string } | null>(null)
   const savingWeek = useRef(false)
+  const previousRecipeIds = useRef<ReadonlySet<string>>(new Set())
+  const [isGenerating, setIsGenerating] = useState(false)
 
   useEffect(() => {
     let isCurrent = true
@@ -91,16 +94,20 @@ function App() {
       }
     })
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
+    if (isGenerating) return
+    setIsGenerating(true)
+    previousRecipeIds.current = await loadPreviousRecipeIds()
+    setIsGenerating(false)
     setSavedSnapshot(null)
     setSaveError(null)
-    setGeneratedMenu(generateMenu(getRequests(), availableRecipes, selectedSeasons))
+    setGeneratedMenu(generateMenu(getRequests(), availableRecipes, selectedSeasons, previousRecipeIds.current))
     setLeftovers({})
     setScreen('menu')
   }
 
   const handleChange = (meal: MenuRequest) => {
-    setGeneratedMenu((current) => replaceMeal(meal, current, availableRecipes, selectedSeasons))
+    setGeneratedMenu((current) => replaceMeal(meal, current, availableRecipes, selectedSeasons, previousRecipeIds.current))
     setLeftovers((current) => {
       const next = { ...current }
       delete next[meal.key]
@@ -635,8 +642,8 @@ function App() {
           </div>
 
           <div className="journey-actions meals-actions">
-            <button className="primary-button" type="button" onClick={handleGenerate}>
-              Générer mes menus <span aria-hidden="true">↗</span>
+            <button className="primary-button" type="button" onClick={handleGenerate} disabled={isGenerating} aria-busy={isGenerating}>
+              {isGenerating ? 'Préparation du menu…' : 'Générer mes menus'} <span aria-hidden="true">↗</span>
             </button>
           </div>
         </section>
@@ -649,8 +656,7 @@ function App() {
       <header className="topbar">
         <span className="brand-mark" aria-hidden="true">✳</span>
         <span className="brand-name">Cassecroute</span>
-        <span className="topbar-note">La semaine, mais en mieux</span>
-        <button className="history-nav-button" type="button" onClick={openHistory}>Historique</button>
+        <HistoryButton onClick={openHistory} />
       </header>
 
       <section className="welcome" aria-labelledby="welcome-title">
@@ -696,6 +702,17 @@ function App() {
   )
 }
 
+function HistoryButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button className="history-nav-button" type="button" onClick={onClick} aria-label="Historique" title="Historique">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+        <rect x="3" y="5" width="18" height="16" rx="2" />
+        <path d="M7 3v4M17 3v4M3 11h18M7 15h2M15 15h2" />
+      </svg>
+    </button>
+  )
+}
+
 type JourneyHeaderProps = { onBack: () => void; onHistory: () => void }
 
 function JourneyHeader({ onBack, onHistory }: JourneyHeaderProps) {
@@ -706,7 +723,7 @@ function JourneyHeader({ onBack, onHistory }: JourneyHeaderProps) {
       </button>
       <span className="brand-mark" aria-hidden="true">✳</span>
       <span className="brand-name">Cassecroute</span>
-      <button className="history-nav-button" type="button" onClick={onHistory}>Historique</button>
+      <HistoryButton onClick={onHistory} />
     </header>
   )
 }

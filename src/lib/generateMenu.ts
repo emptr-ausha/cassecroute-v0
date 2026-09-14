@@ -18,6 +18,7 @@ type GenerationContext = {
   requests: MenuRequest[]
   selectedSeasons: string[]
   currentMenu?: GeneratedMenu
+  previousRecipeIds?: ReadonlySet<string>
   replacingKey?: string
 }
 
@@ -82,11 +83,21 @@ const scoreRecipe = (
   return score
 }
 
+// Existing time/style preferences remain ahead of history; randomness breaks ties last.
+const compareRecipes = (first: Recipe, second: Recipe, request: MenuRequest, menu: GeneratedMenu, previousRecipeIds: ReadonlySet<string>) => {
+  const secondScore = scoreRecipe(second, request, menu)
+  const firstScore = scoreRecipe(first, request, menu)
+  return Math.floor(secondScore) - Math.floor(firstScore)
+    || Number(previousRecipeIds.has(first.id)) - Number(previousRecipeIds.has(second.id))
+    || secondScore - firstScore
+}
+
 const chooseRecipe = (
   request: MenuRequest,
   availableRecipes: Recipe[],
   menu: GeneratedMenu,
   selectedSeasons: string[],
+  previousRecipeIds: ReadonlySet<string>,
 ) => {
   const unusedRecipes = availableRecipes.filter(
     (recipe) => !Object.values(menu).some((meal) => meal.recipe.id === recipe.id),
@@ -107,7 +118,7 @@ const chooseRecipe = (
   const candidates = withoutRepeatedStarch.length > 0 ? withoutRepeatedStarch : compatibleRecipes
 
   return [...candidates].sort(
-    (first, second) => scoreRecipe(second, request, menu) - scoreRecipe(first, request, menu),
+    (first, second) => compareRecipes(first, second, request, menu, previousRecipeIds),
   )[0]
 }
 
@@ -116,6 +127,7 @@ const buildMenu = (
   availableRecipes: Recipe[],
   selectedSeasons: string[],
   existingMenu: GeneratedMenu = {},
+  previousRecipeIds: ReadonlySet<string> = new Set(),
 ) => {
   const menu: GeneratedMenu = { ...existingMenu }
 
@@ -126,7 +138,7 @@ const buildMenu = (
       return first.dayIndex - second.dayIndex
     })
     .forEach((request) => {
-      const recipe = chooseRecipe(request, availableRecipes, menu, selectedSeasons)
+      const recipe = chooseRecipe(request, availableRecipes, menu, selectedSeasons, previousRecipeIds)
       if (recipe) menu[request.key] = { ...request, recipe }
     })
 
@@ -137,13 +149,15 @@ export const generateMenu = (
   requests: MenuRequest[],
   availableRecipes: Recipe[],
   selectedSeasons: string[],
-): GeneratedMenu => buildMenu(requests, availableRecipes, selectedSeasons)
+  previousRecipeIds: ReadonlySet<string> = new Set(),
+): GeneratedMenu => buildMenu(requests, availableRecipes, selectedSeasons, {}, previousRecipeIds)
 
 export const replaceMeal = (
   request: MenuRequest,
   currentMenu: GeneratedMenu,
   availableRecipes: Recipe[],
   selectedSeasons: string[],
+  previousRecipeIds: ReadonlySet<string> = new Set(),
 ): GeneratedMenu => {
   const currentRecipeId = currentMenu[request.key]?.recipe.id
   const menuWithoutMeal = { ...currentMenu }
@@ -168,7 +182,7 @@ export const replaceMeal = (
   )
   const candidates = alternatives.length > 0 ? alternatives : compatibleRecipes
   const replacement = [...candidates].sort(
-    (first, second) => scoreRecipe(second, request, menuWithoutMeal) - scoreRecipe(first, request, menuWithoutMeal),
+    (first, second) => compareRecipes(first, second, request, menuWithoutMeal, previousRecipeIds),
   )[0]
 
   if (!replacement) return currentMenu
@@ -179,9 +193,9 @@ export const replaceMeal = (
   }
 }
 
-export const regenerateMenu = ({ requests, selectedSeasons, currentMenu, replacingKey }: GenerationContext, availableRecipes: Recipe[]) => {
-  if (!replacingKey || !currentMenu) return generateMenu(requests, availableRecipes, selectedSeasons)
+export const regenerateMenu = ({ requests, selectedSeasons, currentMenu, replacingKey, previousRecipeIds }: GenerationContext, availableRecipes: Recipe[]) => {
+  if (!replacingKey || !currentMenu) return generateMenu(requests, availableRecipes, selectedSeasons, previousRecipeIds)
 
   const request = requests.find((item) => item.key === replacingKey)
-  return request ? replaceMeal(request, currentMenu, availableRecipes, selectedSeasons) : currentMenu
+  return request ? replaceMeal(request, currentMenu, availableRecipes, selectedSeasons, previousRecipeIds) : currentMenu
 }

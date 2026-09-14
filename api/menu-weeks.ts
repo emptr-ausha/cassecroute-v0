@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { nextWeekStart } from '../src/lib/menuDates.ts'
+export { nextWeekStart } from '../src/lib/menuDates.ts'
 
 type VercelRequest = IncomingMessage & { body?: unknown }
 type VercelResponse = ServerResponse & {
@@ -13,18 +15,6 @@ type MealSnapshot = {
   recipe_id: string | null
   recipe_name: string
   is_leftovers: boolean
-}
-
-// Work from the Paris calendar date, then use UTC solely for date arithmetic.
-export const nextWeekStart = (now = new Date()): string => {
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
-  }).formatToParts(now)
-  const part = (type: string) => Number(parts.find((value) => value.type === type)!.value)
-  const date = new Date(Date.UTC(part('year'), part('month') - 1, part('day')))
-  const daysUntilMonday = (8 - date.getUTCDay()) % 7 || 7
-  date.setUTCDate(date.getUTCDate() + daysUntilMonday)
-  return date.toISOString().slice(0, 10)
 }
 
 const isNonEmptyString = (value: unknown): value is string =>
